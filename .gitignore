@@ -1,3 +1,5 @@
 venv
 .python-version
 .env
+__pycache__
+api/src/config/config.yaml

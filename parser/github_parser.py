@@ -6,6 +6,60 @@ import aiohttp
 import asyncpg
 
 
+async def check_tables(pool: asyncpg.Pool) -> None:
+    '''Проверить наличие нужных таблиц в БД.
+    
+    Args:
+        pool (asyncpg.Pool): Пул соединений с БД.
+    '''
+    # Проверить наличие таблиц
+    check_tables_query = '''
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_name IN ('repository', 'activity')
+    '''
+    # Создать таблицу repository
+    create_repo_query = '''
+    CREATE TABLE IF NOT EXISTS repository(
+    repo VARCHAR(255) PRIMARY KEY,
+    owner VARCHAR(255) NOT NULL,
+    position_cur INTEGER,
+    position_prev INTEGER,
+    stars INTEGER,
+    watchers INTEGER,
+    forks INTEGER,
+    open_issues INTEGER,
+    language VARCHAR(255));
+    '''
+
+    create_activity_query = '''
+    CREATE TABLE IF NOT EXISTS activity(
+    id SERIAL PRIMARY KEY,
+    repo VARCHAR(255) REFERENCES repository(repo) ON DELETE CASCADE,
+    date DATE,
+    commits INTEGER,
+    authors TEXT);
+    '''
+
+    create_table_querys = {
+        'repository': create_repo_query, 
+        'activity': create_activity_query
+    }
+
+    async with pool.acquire() as conn:
+        result = await conn.fetch(check_tables_query)
+
+    existing_tables = {record['table_name'] for record in result}
+
+    required_tables = {'repository', 'activity'}
+    missing_tables = required_tables - existing_tables
+
+    if missing_tables:
+        async with pool.acquire() as conn:
+            await conn.execute(create_table_querys['repository'])
+            await conn.execute(create_table_querys['activity'])
+
+
 async def insert_repos(pool: asyncpg.Pool, repos: dict) -> None:
     '''Вставить в БД репозитории.
     
@@ -16,7 +70,7 @@ async def insert_repos(pool: asyncpg.Pool, repos: dict) -> None:
 
     # Получаем текущие данные из базы данных
     select_query = '''
-    SELECT repo, position_cur, position_prev FROM Repository ORDER BY position_cur;
+    SELECT repo, position_cur, position_prev FROM repository ORDER BY position_cur;
     '''
 
     async with pool.acquire() as conn:
@@ -26,7 +80,7 @@ async def insert_repos(pool: asyncpg.Pool, repos: dict) -> None:
 
     # Запрос для обновления данных о репозиториях
     update_query = '''
-    UPDATE Repository
+    UPDATE repository
     SET 
         position_cur = $1,
         position_prev = $2,
@@ -40,7 +94,7 @@ async def insert_repos(pool: asyncpg.Pool, repos: dict) -> None:
 
     # Запрос для вставки нового репозитория, если он отсутствует в БД
     insert_query = '''
-    INSERT INTO Repository(
+    INSERT INTO repository(
         repo,
         owner,
         position_cur,
@@ -94,9 +148,9 @@ async def insert_repos(pool: asyncpg.Pool, repos: dict) -> None:
 async def insert_commits_activity(pool: asyncpg.Pool, repo_activity: list[dict]) -> None:
     '''Вставить в БД активность репозиториев.'''
 
-    delete_query = '''DELETE FROM Activity'''
+    delete_query = '''DELETE FROM activity'''
     insert_query = '''
-    INSERT INTO Activity(
+    INSERT INTO activity(
         repo,
         date,
         commits,
@@ -257,7 +311,9 @@ async def main(password: str) -> None:
         token=github_token,
         since_days=since_days_activity
     )
-
+    
+    # Проверяем наличие таблиц
+    await check_tables(pool)
     # Вставляем данные в базу данных
     await insert_repos(pool, top_repos)
     await insert_commits_activity(pool, activity)
