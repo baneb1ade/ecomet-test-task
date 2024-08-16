@@ -1,4 +1,5 @@
 import asyncpg
+from asyncpg.exceptions import UndefinedTableError
 
 
 class PsqlService:
@@ -54,9 +55,15 @@ class PsqlService:
 
         Returns:
             list[asyncpg.Record]: Результаты работы метода в виде списка asyncpg.Record
+            
+        Raises:
+            RuntimeError: Если в БД нет необходимых таблиц
         '''
         
         await self.__initialize()
         async with self.__pool.acquire() as conn:
-            result = await conn.fetch(query, *args)
-            return result
+            try:
+                result = await conn.fetch(query, *args)
+                return result
+            except UndefinedTableError as _ex:
+                raise RuntimeError("Нет необходимых таблиц") from _ex
