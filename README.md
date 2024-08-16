@@ -11,7 +11,7 @@
 yc serverless function create --name=parser
 ```
 
-2. Создать версию облачной функции, если база данных находится не на Yandex Cloud, то убрать параметр --service-account-id, если на Yandex Cloud, то убрать POSTGRES_PASSWORD
+2. Создать версию облачной функции
 ```console
 yc serverless function version create \
   --function-name=parser \
@@ -20,18 +20,17 @@ yc serverless function version create \
   --memory 128m \
   --execution-timeout 20s \
   --source-path ./parser \
-  --service-account-id <ID сервисного аккаунта, убрать если БД находится не на Yandex Cloud> \
   --environment POSTGRES_HOST=<POSTGRES HOST> \
   --environment POSTGRES_USER=<POSTGRES USER> \
   --environment POSTGRES_DATABASE=<POSTGRES DATABASE> \
   --environment GITHUB_TOKEN=<GITHUB Token для парсинга> \
   --environment POSTGRES_PORT=<POSTGRES PORT> \
-  --environment POSTGRES_PASSWORD=<POSTGRES PASSWORD, убрать если БД находится на Yandex Cloud, пароль будет получен из контекста сервисного аккаунта> \
+  --environment POSTGRES_PASSWORD=<POSTGRES PASSWORD> \
   --environment TOP_N_REPOS=<Кол-во репозиториев для парсинга, если не указывать будет равен 100> \
   --environment SINCE_DAYS_ACTIVITY=<Кол-во дней для парсинга активности,если не указывать будет равен 30>
 ```
 
-3. Создать триггер на каждый час, одного раза в час достаточно, чтобы иметь актуальную информацию о топе репозиториев Github
+3. Создать триггер на каждый час, одного раза в час достаточно, чтобы иметь актуальную информацию о топе репозиториев Github. Выставить каждые 5 минут для тестов: '*/5 * ? * * *'
 ```console
 yc serverless trigger create timer \
   --name parser \
@@ -57,11 +56,31 @@ docker compose up -d
 4. Перейти по адресу http://127.0.0.1:8000/docs
 
 
-
-
-
-
-
-
-
+### Дополнительная информация:
+1. SQL-запросы для создания таблиц
+```console
+CREATE TABLE Repository (
+    repo VARCHAR(255) PRIMARY KEY,
+    owner VARCHAR(255) NOT NULL,
+    position_cur INTEGER,
+    position_prev INTEGER,
+    stars INTEGER,
+    watchers INTEGER,
+    forks INTEGER,
+    open_issues INTEGER,
+    language VARCHAR(255)
+);
+```
+```console
+CREATE TABLE Activity (
+    id SERIAL PRIMARY KEY,
+    repo VARCHAR(255) REFERENCES Repository(repo) ON DELETE CASCADE,
+    date DATE,
+    commits INTEGER,
+    authors TEXT
+);
+```
+2. Варианты улучшить FastAPI приложение:
+  - Добавить Юнит тесты
+  - Добавить логирование запросов и ошибок
    

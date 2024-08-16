@@ -276,15 +276,12 @@ def get_env_variable(name: str, default=None) -> str:
 
     value = os.getenv(name, default)
     if value is None:
-        raise EnvironmentError(f"Environment variable {name} is missing.")
+        raise EnvironmentError(f"Нет переменной окружения: {name}")
     return value
 
 
-async def main(password: str) -> None:
+async def main() -> None:
     '''Точка входа в парсер.
-
-    Args:
-        password (str): Пароль для подключения к БД.
     '''
 
     github_token = get_env_variable('GITHUB_TOKEN')
@@ -294,7 +291,7 @@ async def main(password: str) -> None:
     # Создаем пул соединений к базе данных
     pool = await asyncpg.create_pool(
         user=get_env_variable('POSTGRES_USER'),
-        password=password,
+        password=get_env_variable('POSTGRES_PASSWORD'),
         database=get_env_variable('POSTGRES_DATABASE'),
         port=int(get_env_variable('POSTGRES_PORT')),
         host=get_env_variable('POSTGRES_HOST'),
@@ -327,13 +324,7 @@ def handler(event, context) -> None:
 
     Args:
         event (dict): Данные события, переданные в функцию.
-        context (dict): Контекст выполнения, содержащий токен аутентификации.
+        context (dict): Контекст выполнени
     '''
     
-    # Если БД находится в Yandex Cloud - не указывать пароль в переменных окружения и он возьмется
-    # из контекста сервисного аккаунта
-    password = os.getenv('POSTGRES_PASSWORD') if os.getenv('POSTGRES_PASSWORD') else  context.token['access_token']
-    if password is None:
-        raise ValueError('Пароль не может быть None')
-    
-    asyncio.run(main(password))
+    asyncio.run(main())

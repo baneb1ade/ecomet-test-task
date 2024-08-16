@@ -12,7 +12,7 @@ class PsqlService:
         `__init__(self, connection_string) -> None`
             Конструктор класса PsqlService
             
-        `____initialize(self) -> None`
+        `__initialize(self) -> None`
             Проверить создан ли пул соединений
 
         `fetch(self, query: str, *args) -> list[asyncpg.Record]`
@@ -65,5 +65,6 @@ class PsqlService:
             try:
                 result = await conn.fetch(query, *args)
                 return result
+            
             except UndefinedTableError as _ex:
                 raise RuntimeError("Нет необходимых таблиц") from _ex

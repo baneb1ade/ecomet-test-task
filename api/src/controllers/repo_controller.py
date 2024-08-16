@@ -22,8 +22,8 @@ async def get_top_repos(repo_service: RepoService = Depends(Provide[Container.re
 async def get_repo_activity(
     owner: str,
     repo: str,
-    since: date = Query(None, description='С какой даты отображать активность'),
-    until: date = Query(None, description='До какой даты отображать активность'),
+    since: date = Query(None, description='С какой даты отображать активность, формат: YYYY-MM-DD(2024-08-12)'),
+    until: date = Query(None, description='До какой даты отображать активность, формат: YYYY-MM-DD(2024-08-15)'),
     repo_service: RepoService = Depends(Provide[Container.repo_service])
 ):
     return await repo_service.get_repo_activity(owner, repo, since, until)
