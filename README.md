@@ -57,7 +57,7 @@ docker compose up -d
 
 ### Дополнительная информация:
 1. SQL-запросы для создания таблиц
-```console
+```sql
 CREATE TABLE Repository (
     repo VARCHAR(255) PRIMARY KEY,
     owner VARCHAR(255) NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE Repository (
     language VARCHAR(255)
 );
 ```
-```console
+```sql
 CREATE TABLE Activity (
     id SERIAL PRIMARY KEY,
     repo VARCHAR(255) REFERENCES Repository(repo) ON DELETE CASCADE,
@@ -79,7 +79,5 @@ CREATE TABLE Activity (
     authors TEXT
 );
 ```
-2. Варианты улучшить FastAPI приложение:
-  - Добавить Юнит тесты
-  - Добавить логирование запросов и ошибок
+
    
