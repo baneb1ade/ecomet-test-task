@@ -1,4 +1,4 @@
-# Ecomet Test Task(Python=3.11.9)
+# e-Comet Test Task(Python==3.11.9)
 ## Тестовое задание состоит из 2х частей:
   1. Github parser в Yandex Cloud
   2. Fast API приложение в Docker контейнере
